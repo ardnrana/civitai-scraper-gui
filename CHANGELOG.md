@@ -32,6 +32,17 @@
 - Fixed orphaned records: Now deletes from `metadata` and `favorites` tables on image deletion
 - Fixed duplicate status polling (was making 2x API calls)
 
+**Gallery Click Handlers:**
+- Fixed list view "View Details" button not working (was calling wrong API endpoint)
+- Fixed image click in list view not opening details modal
+- Changed `/api/image/` to `/api/metadata/` for proper JSON response
+- Updated data structure mapping to match API response format
+
+**Filesystem Sync:**
+- Added automatic sync on startup to detect externally deleted images
+- Deleted images marked as `file_deleted` in database (not removed from log)
+- Prevents re-downloading images deleted in external apps (IrfanView, etc.)
+
 **Code Quality:**
 - Replaced 4 bare `except:` clauses with specific exception handling
 - Changed debug messages from `logger.info()` to `logger.debug()`

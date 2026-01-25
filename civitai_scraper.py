@@ -138,6 +138,7 @@ class CivitaiScraper:
         if use_database:
             self._init_database()
             self._migrate_text_log_to_db()
+            self.sync_filesystem_deletions()  # Sync deleted files on startup
         else:
             self.downloaded_ids = self._load_download_log()
 
@@ -392,6 +393,86 @@ class CivitaiScraper:
         self.log_file.rename(backup_path)
         self.logger.info(f"Migrated {len(image_ids)} entries. Backup: {backup_path}")
 
+    def sync_filesystem_deletions(self):
+        """
+        Sync database with filesystem to mark deleted files.
+
+        When images are deleted externally (e.g., in IrfanView), this updates the database
+        to mark them as 'file_deleted' instead of 'success', while keeping the log entry
+        to prevent re-downloading.
+        """
+        self.logger.info("Syncing database with filesystem...")
+
+        with self.db_lock:
+            cursor = self.db_conn.cursor()
+
+            # Get all images currently marked as 'success'
+            cursor.execute('''
+                SELECT image_id, filename, folder_path, file_extension
+                FROM downloads
+                WHERE status = 'success'
+            ''')
+            success_images = cursor.fetchall()
+
+            if not success_images:
+                self.logger.info("No images to sync")
+                return
+
+            deleted_count = 0
+            checked_count = 0
+
+            for image_id, filename, folder_path, file_ext in success_images:
+                checked_count += 1
+
+                # Strip "downloads\" prefix if present (legacy database format)
+                if filename.startswith("downloads\\") or filename.startswith("downloads/"):
+                    clean_filename = filename.replace("downloads\\", "").replace("downloads/", "")
+                else:
+                    clean_filename = filename
+
+                # Build possible file paths
+                possible_paths = []
+
+                # Try with folder_path if present
+                if folder_path:
+                    possible_paths.append(self.output_dir / folder_path / clean_filename)
+
+                # Try direct path
+                possible_paths.append(self.output_dir / clean_filename)
+
+                # Try videos directory for video files
+                if file_ext and file_ext.lower() in ['.mp4', '.webm', '.mov']:
+                    if folder_path:
+                        possible_paths.append(self.videos_dir / folder_path / clean_filename)
+                    possible_paths.append(self.videos_dir / clean_filename)
+
+                # Check if file exists at any path
+                file_exists = False
+                for path in possible_paths:
+                    try:
+                        if path.exists():
+                            file_exists = True
+                            break
+                    except (OSError, ValueError):
+                        continue
+
+                # If file doesn't exist, mark as deleted in database
+                if not file_exists:
+                    cursor.execute('''
+                        UPDATE downloads
+                        SET status = 'file_deleted'
+                        WHERE image_id = ?
+                    ''', (image_id,))
+                    deleted_count += 1
+                    self.logger.debug(f"Marked as deleted: {clean_filename} (ID: {image_id})")
+
+            self.db_conn.commit()
+
+            if deleted_count > 0:
+                self.logger.info(f"Filesystem sync complete: {deleted_count} file(s) marked as deleted out of {checked_count} checked")
+            else:
+                self.logger.info(f"Filesystem sync complete: All {checked_count} files exist")
+
     def _parse_int(self, value) -> Optional[int]:
         """Safely parse integer from various formats"""
         try:
@@ -559,11 +640,11 @@ class CivitaiScraper:
             video_dir.mkdir(parents=True, exist_ok=True)
 
     def _is_downloaded_db(self, image_id: str) -> bool:
-        """Check if downloaded via database"""
+        """Check if downloaded via database (includes deleted files to prevent re-download)"""
         with self.db_lock:
             cursor = self.db_conn.cursor()
-            cursor.execute('SELECT 1 FROM downloads WHERE image_id = ? AND status IN (?, ?)',
-                          (str(image_id), 'success', 'migrated'))
+            cursor.execute('SELECT 1 FROM downloads WHERE image_id = ? AND status IN (?, ?, ?)',
+                          (str(image_id), 'success', 'migrated', 'file_deleted'))
             return cursor.fetchone() is not None
 
     def _log_download_db(self, image_id: str, url: str, filename: str,
