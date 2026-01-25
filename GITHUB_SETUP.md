@@ -9,11 +9,12 @@ Your repository has been initialized and the first commit has been created. Here
 ## Step 1: Create GitHub Repository
 
 1. Go to https://github.com/new
-2. Repository name: `civitai-scraper` (or your preferred name)
-3. Description: `Advanced Civitai image scraper with web interface, tag filtering, and gallery browser`
+2. **Repository name**: `civitai-scraper-gui`
+3. **Description**: `Advanced Civitai image scraper with dark mode web interface, tag filtering, favorites system, and real-time statistics dashboard`
 4. **Important:** Do NOT initialize with README (we already have one)
-5. Keep it Public or Private (your choice)
-6. Click "Create repository"
+5. **License**: MIT License (LICENSE file already included)
+6. Keep it **Public** (recommended) or Private (your choice)
+7. Click "Create repository"
 
 ---
 
@@ -23,7 +24,7 @@ Copy and run these commands:
 
 ```bash
 # Add your GitHub repository as remote
-git remote add origin https://github.com/YOUR_USERNAME/civitai-scraper.git
+git remote add origin https://github.com/YOUR_USERNAME/civitai-scraper-gui.git
 
 # Push the code
 git push -u origin master
@@ -31,7 +32,7 @@ git push -u origin master
 
 **Or using SSH:**
 ```bash
-git remote add origin git@github.com:YOUR_USERNAME/civitai-scraper.git
+git remote add origin git@github.com:YOUR_USERNAME/civitai-scraper-gui.git
 git push -u origin master
 ```
 
@@ -121,10 +122,22 @@ Visit your repository on GitHub and you should see:
    - `civitai`
    - `image-gallery`
    - `web-interface`
+   - `dark-mode`
+   - `sqlite`
+   - `image-downloader`
+   - `gallery-viewer`
+   - `web-ui`
+   - `scraper`
 
-2. **Add Description** in repository settings
+2. **Add "About" Section** in repository settings:
+   - ✅ Description already set during creation
+   - ✅ Website: Leave blank (or add your deployment URL)
+   - ✅ Topics: Add the topics listed above
 
-3. **Enable Issues** if you want bug reports
+3. **Enable Features**:
+   - ✅ Issues - for bug reports and feature requests
+   - ✅ Discussions - for community Q&A (optional)
+   - ✅ Projects - for roadmap tracking (optional)
 
 4. **Create a Release** (optional):
    - Go to Releases → Create new release
@@ -151,11 +164,23 @@ git push
 Others can clone with:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/civitai-scraper.git
-cd civitai-scraper
+git clone https://github.com/YOUR_USERNAME/civitai-scraper-gui.git
+cd civitai-scraper-gui
 pip install -r requirements.txt
 python web_interface.py
 ```
+
+---
+
+## License
+
+This project is licensed under the **MIT License** - see the `LICENSE` file for details.
+
+**What this means**:
+- ✅ Free to use, modify, and distribute
+- ✅ Commercial use allowed
+- ✅ No warranty or liability
+- ✅ Must include license and copyright notice in copies
 
 ---
 
