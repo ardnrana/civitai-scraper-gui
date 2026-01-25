@@ -1,0 +1,529 @@
+{% extends "base.html" %}
+
+{% block title %}Control Panel{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Download Control Panel</h2>
+        <p class="text-muted">Configure and start downloads directly from the web interface</p>
+    </div>
+</div>
+
+<!-- Download Status Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card" id="statusCard">
+            <div class="card-body">
+                <h5>Download Status</h5>
+                <div id="statusDisplay">
+                    <p class="mb-2"><strong>Status:</strong> <span id="statusMessage">Ready to start</span></p>
+                    <div class="progress mb-2" style="height: 25px;">
+                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <small class="text-muted">Downloaded</small><br>
+                            <strong id="downloadedCount">0</strong>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted">Skipped</small><br>
+                            <strong id="skippedCount">0</strong>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted">Failed</small><br>
+                            <strong id="failedCount">0</strong>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted">Total</small><br>
+                            <strong id="totalCount">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Download Configuration Form -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h5>Download Configuration</h5>
+                <form id="downloadForm">
+                    <!-- Basic Settings -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Number of Images</label>
+                            <input type="number" class="form-control" id="numImages" value="100" min="1">
+                            <small class="text-muted">Set limit or use endless mode</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Mode</label>
+                            <select class="form-select" id="downloadMode">
+                                <option value="limited" selected>Limited (use number above)</option>
+                                <option value="endless">Endless Mode (until stopped)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Workers (Concurrent Downloads)</label>
+                            <input type="number" class="form-control" id="workers" value="10" min="1" max="20">
+                            <small class="form-text text-muted">💡 With API key: use 10-20 workers for faster downloads</small>
+                        </div>
+                    </div>
+
+                    <!-- Sort and Period -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Sort By</label>
+                            <select class="form-select" id="sort">
+                                <option value="Most Reactions" selected>Most Reactions</option>
+                                <option value="Most Comments">Most Comments</option>
+                                <option value="Newest">Newest</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Time Period</label>
+                            <select class="form-select" id="period">
+                                <option value="AllTime" selected>All Time</option>
+                                <option value="Year">Year</option>
+                                <option value="Month">Month</option>
+                                <option value="Week">Week</option>
+                                <option value="Day">Day</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- NSFW Filter -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Content Filter</label>
+                            <select class="form-select" id="nsfw">
+                                <option value="">All Content (API Default)</option>
+                                <option value="None">Safe Only (SFW)</option>
+                                <option value="Soft">Safe + Soft NSFW</option>
+                                <option value="Mature">Safe + Soft + Mature</option>
+                                <option value="X">All Including Adult Content</option>
+                            </select>
+                            <small class="text-muted">Select content maturity level. "X" includes all NSFW levels.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Minimum Resolution</label>
+                            <select class="form-select" id="minResolution">
+                                <option value="">Any Resolution</option>
+                                <option value="512">512px (Low)</option>
+                                <option value="768">768px (SD)</option>
+                                <option value="1024">1024px (Standard)</option>
+                                <option value="1536">1536px (High)</option>
+                                <option value="2048">2048px (Very High)</option>
+                                <option value="2560">2560px (Ultra)</option>
+                                <option value="4096">4096px (4K)</option>
+                            </select>
+                            <small class="text-muted">Filter by minimum pixels on longer side</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Minimum Reactions</label>
+                            <select class="form-select" id="minReactions">
+                                <option value="">Any Reactions</option>
+                                <option value="10">10+ reactions</option>
+                                <option value="50">50+ reactions</option>
+                                <option value="100">100+ reactions (Popular)</option>
+                                <option value="500">500+ reactions (Very Popular)</option>
+                                <option value="1000">1000+ reactions (Viral)</option>
+                                <option value="5000">5000+ reactions (Extremely Viral)</option>
+                            </select>
+                            <small class="text-muted">Total positive reactions (likes + hearts + laughs + cries)</small>
+                        </div>
+                    </div>
+
+                    <!-- Additional Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Username Filter</label>
+                            <input type="text" class="form-control" id="username" placeholder="Filter by username">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Model ID Filter</label>
+                            <input type="number" class="form-control" id="modelId" placeholder="Filter by model ID">
+                        </div>
+                    </div>
+
+                    <!-- File Types -->
+                    <div class="mb-3">
+                        <label class="form-label">File Types (leave unchecked for all)</label>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input file-type" type="checkbox" value="jpg" id="typeJpg">
+                                    <label class="form-check-label" for="typeJpg">JPG</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input file-type" type="checkbox" value="png" id="typePng">
+                                    <label class="form-check-label" for="typePng">PNG</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input file-type" type="checkbox" value="webp" id="typeWebp">
+                                    <label class="form-check-label" for="typeWebp">WebP</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input file-type" type="checkbox" value="gif" id="typeGif">
+                                    <label class="form-check-label" for="typeGif">GIF</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input file-type" type="checkbox" value="mp4" id="typeMp4">
+                                    <label class="form-check-label" for="typeMp4">MP4</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check">
+                                    <input class="form-check-input file-type" type="checkbox" value="webm" id="typeWebm">
+                                    <label class="form-check-label" for="typeWebm">WebM</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="mb-3">
+                        <label class="form-label">Advanced Options</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="organizeByNsfw" checked>
+                            <label class="form-check-label" for="organizeByNsfw">
+                                Organize into SFW/NSFW folders
+                            </label>
+                            <small class="text-muted d-block">SFW = PG/PG-13, NSFW = All other content</small>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="noMetadata">
+                            <label class="form-check-label" for="noMetadata">
+                                Skip saving metadata JSON files
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Request Delay (seconds)</label>
+                            <input type="number" class="form-control" id="delay" value="0.2" min="0" step="0.1">
+                            <small class="form-text text-muted">💡 With API key: use 0.1-0.3 for faster downloads</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Max Retries</label>
+                            <input type="number" class="form-control" id="maxRetries" value="3" min="1" max="10">
+                        </div>
+                    </div>
+
+                    <!-- API Key -->
+                    <div class="mb-3">
+                        <label class="form-label">API Key (Recommended for faster downloads)</label>
+                        <input type="text" class="form-control" id="apiKey" placeholder="Your Civitai API key">
+                        <small class="form-text text-muted">⚡ Get your free API key from <a href="https://civitai.com/user/account" target="_blank">Civitai Account Settings</a> for unlimited rate limits!</small>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="startBtn">
+                            <span class="spinner-border spinner-border-sm me-2" id="startSpinner" style="display: none;"></span>
+                            Start Download
+                        </button>
+                        <button type="button" class="btn btn-danger" id="stopBtn" disabled>Stop Download</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Presets -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5>Quick Presets</h5>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="applyPreset('popular')">
+                        Popular Images
+                    </button>
+                    <button class="btn btn-outline-success" onclick="applyPreset('newest')">
+                        Latest Images
+                    </button>
+                    <button class="btn btn-outline-info" onclick="applyPreset('sfw')">
+                        SFW Only
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="applyPreset('highres')">
+                        High Resolution
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="applyPreset('videos')">
+                        Videos Only
+                    </button>
+                </div>
+
+                <hr class="my-4">
+
+                <h6>Saved Settings</h6>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="saveSettings()">
+                        Save Current Settings
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadSettings()">
+                        Load Saved Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6>Tips</h6>
+                <ul class="small">
+                    <li>Use more workers for faster downloads</li>
+                    <li>Enable NSFW organization for better file management</li>
+                    <li>Set minimum resolution to filter low-quality images</li>
+                    <li>Use API key for unlimited rate limits</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let statusUpdateInterval;
+
+// Form submission
+document.getElementById('downloadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    startDownload();
+});
+
+function startDownload() {
+    // Collect file types
+    const fileTypes = Array.from(document.querySelectorAll('.file-type:checked')).map(cb => cb.value);
+
+    // Check mode
+    const mode = document.getElementById('downloadMode').value;
+    const numImages = mode === 'endless' ? null : (parseInt(document.getElementById('numImages').value) || 100);
+
+    const params = {
+        num_images: numImages,
+        endless: mode === 'endless',
+        workers: parseInt(document.getElementById('workers').value),
+        sort: document.getElementById('sort').value,
+        period: document.getElementById('period').value,
+        nsfw: document.getElementById('nsfw').value || null,
+        min_resolution: document.getElementById('minResolution').value ? parseInt(document.getElementById('minResolution').value) : null,
+        min_reactions: document.getElementById('minReactions').value ? parseInt(document.getElementById('minReactions').value) : null,
+        username: document.getElementById('username').value || null,
+        model_id: parseInt(document.getElementById('modelId').value) || null,
+        file_types: fileTypes.length > 0 ? fileTypes : null,
+        organize_by_nsfw: document.getElementById('organizeByNsfw').checked,
+        no_metadata: document.getElementById('noMetadata').checked,
+        delay: parseFloat(document.getElementById('delay').value),
+        max_retries: parseInt(document.getElementById('maxRetries').value),
+        api_key: document.getElementById('apiKey').value || null,
+        enable_retry: true
+    };
+
+    // Save settings to localStorage
+    saveSettingsToStorage();
+
+    document.getElementById('startSpinner').style.display = 'inline-block';
+    document.getElementById('startBtn').disabled = true;
+
+    fetch('/api/download/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(params)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            document.getElementById('startSpinner').style.display = 'none';
+            document.getElementById('startBtn').disabled = false;
+        } else {
+            document.getElementById('stopBtn').disabled = false;
+            startStatusUpdates();
+        }
+    })
+    .catch(error => {
+        alert('Error starting download: ' + error);
+        document.getElementById('startSpinner').style.display = 'none';
+        document.getElementById('startBtn').disabled = false;
+    });
+}
+
+function stopDownload() {
+    fetch('/api/download/stop', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('stopBtn').disabled = true;
+        })
+        .catch(error => alert('Error stopping download: ' + error));
+}
+
+function startStatusUpdates() {
+    if (statusUpdateInterval) clearInterval(statusUpdateInterval);
+
+    statusUpdateInterval = setInterval(updateStatus, 1000);
+}
+
+function updateStatus() {
+    fetch('/api/download/status')
+        .then(response => response.json())
+        .then(status => {
+            document.getElementById('statusMessage').textContent = status.message;
+
+            // Handle endless mode (total = 0)
+            if (status.total === 0) {
+                document.getElementById('progressBar').style.width = '100%';
+                document.getElementById('progressBar').textContent = 'Endless Mode';
+            } else {
+                document.getElementById('progressBar').style.width = status.progress + '%';
+                document.getElementById('progressBar').textContent = status.progress + '%';
+            }
+
+            document.getElementById('downloadedCount').textContent = status.downloaded;
+            document.getElementById('skippedCount').textContent = status.skipped;
+            document.getElementById('failedCount').textContent = status.failed;
+            document.getElementById('totalCount').textContent = status.total === 0 ? '∞' : status.total;
+
+            // Update button states based on status
+            if (status.running) {
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('startSpinner').style.display = 'inline-block';
+                document.getElementById('stopBtn').disabled = false;
+
+                // Start status updates if not already running (Phase 2.4: Use existing function)
+                if (!statusUpdateInterval) {
+                    startStatusUpdates();
+                }
+            } else {
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startSpinner').style.display = 'none';
+                document.getElementById('stopBtn').disabled = true;
+
+                // Stop status updates
+                if (statusUpdateInterval) {
+                    clearInterval(statusUpdateInterval);
+                    statusUpdateInterval = null;
+                }
+            }
+        })
+        .catch(error => console.error('Error updating status:', error));
+}
+
+document.getElementById('stopBtn').addEventListener('click', stopDownload);
+
+// Presets
+function applyPreset(preset) {
+    switch(preset) {
+        case 'popular':
+            document.getElementById('sort').value = 'Most Reactions';
+            document.getElementById('period').value = 'Month';
+            document.getElementById('numImages').value = '100';
+            break;
+        case 'newest':
+            document.getElementById('sort').value = 'Newest';
+            document.getElementById('period').value = 'Day';
+            document.getElementById('numImages').value = '50';
+            break;
+        case 'sfw':
+            document.getElementById('nsfw').value = 'None';
+            document.getElementById('numImages').value = '100';
+            break;
+        case 'highres':
+            document.getElementById('minResolution').value = '2048';  // Dropdown option
+            document.getElementById('numImages').value = '50';
+            break;
+        case 'videos':
+            document.querySelectorAll('.file-type').forEach(cb => cb.checked = false);
+            document.getElementById('typeMp4').checked = true;
+            document.getElementById('typeWebm').checked = true;
+            document.getElementById('numImages').value = '30';
+            break;
+    }
+}
+
+// Save/Load settings
+function saveSettingsToStorage() {
+    const fileTypes = Array.from(document.querySelectorAll('.file-type:checked')).map(cb => cb.value);
+
+    const settings = {
+        num_images: document.getElementById('numImages').value,
+        download_mode: document.getElementById('downloadMode').value,
+        workers: document.getElementById('workers').value,
+        sort: document.getElementById('sort').value,
+        period: document.getElementById('period').value,
+        nsfw: document.getElementById('nsfw').value,
+        min_resolution: document.getElementById('minResolution').value,
+        min_reactions: document.getElementById('minReactions').value,
+        username: document.getElementById('username').value,
+        model_id: document.getElementById('modelId').value,
+        file_types: fileTypes,
+        organize_by_nsfw: document.getElementById('organizeByNsfw').checked,
+        no_metadata: document.getElementById('noMetadata').checked,
+        delay: document.getElementById('delay').value,
+        max_retries: document.getElementById('maxRetries').value,
+        api_key: document.getElementById('apiKey').value
+    };
+    localStorage.setItem('civitai_settings', JSON.stringify(settings));
+}
+
+function loadSettingsFromStorage() {
+    const settings = JSON.parse(localStorage.getItem('civitai_settings'));
+    if (settings) {
+        document.getElementById('numImages').value = settings.num_images || '100';
+        document.getElementById('downloadMode').value = settings.download_mode || 'limited';
+        document.getElementById('workers').value = settings.workers || 10;
+        document.getElementById('sort').value = settings.sort || 'Most Reactions';
+        document.getElementById('period').value = settings.period || 'AllTime';
+        document.getElementById('nsfw').value = settings.nsfw || '';
+        document.getElementById('minResolution').value = settings.min_resolution || '';
+        document.getElementById('minReactions').value = settings.min_reactions || '';
+        document.getElementById('username').value = settings.username || '';
+        document.getElementById('modelId').value = settings.model_id || '';
+        document.getElementById('delay').value = settings.delay || 0.2;
+        document.getElementById('maxRetries').value = settings.max_retries || 3;
+        document.getElementById('organizeByNsfw').checked = settings.organize_by_nsfw !== undefined ? settings.organize_by_nsfw : true;
+        document.getElementById('noMetadata').checked = settings.no_metadata || false;
+        document.getElementById('apiKey').value = settings.api_key || '';
+
+        // Restore file type checkboxes
+        if (settings.file_types) {
+            document.querySelectorAll('.file-type').forEach(cb => {
+                cb.checked = settings.file_types.includes(cb.value);
+            });
+        }
+    }
+}
+
+function saveSettings() {
+    saveSettingsToStorage();
+    alert('Settings saved!');
+}
+
+function loadSettings() {
+    loadSettingsFromStorage();
+    alert('Settings loaded!');
+}
+
+// Load settings on page load
+loadSettingsFromStorage();
+
+// Initial status check
+updateStatus();
+
+// Check status periodically (every 2 seconds) to catch ongoing downloads when returning to page
+setInterval(updateStatus, 2000);
+</script>
+{% endblock %}

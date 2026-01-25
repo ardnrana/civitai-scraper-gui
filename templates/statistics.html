@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Download Statistics</h2>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Total Downloads -->
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Total Downloads</h6>
+            <h3 id="totalDownloads">-</h3>
+        </div>
+    </div>
+
+    <!-- Total Size -->
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Total Size</h6>
+            <h3 id="totalSize">-</h3>
+        </div>
+    </div>
+
+    <!-- Average Resolution -->
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Avg Resolution</h6>
+            <h3 id="avgResolution">-</h3>
+        </div>
+    </div>
+
+    <!-- File Types -->
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">File Types</h6>
+            <h3 id="fileTypes">-</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Tag Statistics -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Tag Statistics</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="toggleTagView()">
+                        <span id="viewToggleIcon">☁️</span> <span id="viewToggleText">Cloud</span>
+                    </button>
+                    <span class="badge bg-primary" id="tagCount">0 total</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Search Box -->
+                <div class="mb-3">
+                    <input type="text"
+                           class="form-control"
+                           id="tagSearch"
+                           placeholder="Search tags..."
+                           onkeyup="filterTags()">
+                </div>
+
+                <!-- Tag List (Scrollable) -->
+                <div id="tagList" style="max-height: 500px; overflow-y: auto;">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Load More Button -->
+                <div class="text-center mt-3">
+                    <button class="btn btn-outline-primary"
+                            id="loadMoreTags"
+                            onclick="loadMoreTags()"
+                            style="display: none;">
+                        Load More Tags
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Models -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5>Top Models</h5>
+                <div id="topModels" class="mt-3">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Recent Activity -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5>Recent Download Activity (Last 30 Days)</h5>
+                <canvas id="activityChart" width="400" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+function loadStatistics() {
+    fetch('/api/statistics')
+        .then(response => response.json())
+        .then(data => {
+            // Update stat cards
+            document.getElementById('totalDownloads').textContent = data.total_downloads.toLocaleString();
+            document.getElementById('totalSize').textContent = formatBytes(data.total_size);
+
+            if (data.avg_resolution && data.avg_resolution[0] && data.avg_resolution[1]) {
+                const avgWidth = Math.round(data.avg_resolution[0]);
+                const avgHeight = Math.round(data.avg_resolution[1]);
+                document.getElementById('avgResolution').textContent = `${avgWidth}x${avgHeight}`;
+            } else {
+                document.getElementById('avgResolution').textContent = 'N/A';
+            }
+
+            // File types
+            const types = Object.keys(data.by_type || {}).length;
+            document.getElementById('fileTypes').textContent = types;
+
+            // Top models
+            const topModelsDiv = document.getElementById('topModels');
+            if (data.top_models && data.top_models.length > 0) {
+                topModelsDiv.innerHTML = '<div class="list-group">' +
+                    data.top_models.map(model =>
+                        `<div class="list-group-item d-flex justify-content-between align-items-center">
+                            ${model.name}
+                            <span class="badge bg-success rounded-pill">${model.count}</span>
+                        </div>`
+                    ).join('') +
+                    '</div>';
+            } else {
+                topModelsDiv.innerHTML = '<p class="text-muted">No model data available</p>';
+            }
+
+            // Activity chart
+            if (data.downloads_by_date && data.downloads_by_date.length > 0) {
+                const ctx = document.getElementById('activityChart').getContext('2d');
+                const labels = data.downloads_by_date.map(d => d.date).reverse();
+                const counts = data.downloads_by_date.map(d => d.count).reverse();
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Downloads per Day',
+                            data: counts,
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error loading statistics:', error));
+}
+
+// Tag management variables
+let allTags = [];
+let displayedTags = [];
+let tagDisplayLimit = 100; // Per user preference: 100 tags per page
+let tagViewMode = 'list'; // 'list' or 'cloud'
+
+async function loadAllTags() {
+    try {
+        const response = await fetch('/api/tags/all');
+        const data = await response.json();
+
+        allTags = data.tags; // Already sorted by count DESC from backend
+        document.getElementById('tagCount').textContent = `${allTags.length} total`;
+
+        displayedTags = allTags.slice(0, tagDisplayLimit);
+        renderTags(displayedTags);
+
+        if (allTags.length > tagDisplayLimit) {
+            document.getElementById('loadMoreTags').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Tag load failed:', error);
+        document.getElementById('tagList').innerHTML = '<p class="text-muted">Failed to load tags</p>';
+    }
+}
+
+function renderTags(tags) {
+    if (tagViewMode === 'cloud') {
+        renderTagCloud(tags);
+    } else {
+        renderTagList(tags);
+    }
+}
+
+function renderTagList(tags) {
+    const html = tags.map((tag, index) => `
+        <div class="tag-item mb-2 d-flex justify-content-between align-items-center p-2 border-bottom">
+            <div class="d-flex align-items-center">
+                <span class="text-muted me-2" style="min-width: 40px;">#${index + 1}</span>
+                <a href="/?tag=${encodeURIComponent(tag.name)}"
+                   class="tag-link text-decoration-none"
+                   title="Filter gallery by this tag">
+                    ${tag.name}
+                </a>
+            </div>
+            <span class="badge bg-secondary">${tag.count}</span>
+        </div>
+    `).join('');
+
+    document.getElementById('tagList').innerHTML = html;
+}
+
+function renderTagCloud(tags) {
+    if (tags.length === 0) {
+        document.getElementById('tagList').innerHTML = '<p class="text-muted">No tags found</p>';
+        return;
+    }
+
+    // Calculate font sizes based on tag counts
+    const maxCount = Math.max(...tags.map(t => t.count));
+    const minCount = Math.min(...tags.map(t => t.count));
+    const range = maxCount - minCount || 1;
+
+    const html = tags.map(tag => {
+        // Scale font size from 12px to 32px based on count
+        const normalized = (tag.count - minCount) / range;
+        const fontSize = 12 + (normalized * 20);
+
+        // Scale opacity from 0.6 to 1.0
+        const opacity = 0.6 + (normalized * 0.4);
+
+        // Color gradient from blue to red based on popularity
+        const hue = 210 - (normalized * 60); // 210 (blue) to 150 (teal/green)
+
+        return `
+            <a href="/?tag=${encodeURIComponent(tag.name)}"
+               class="tag-cloud-item"
+               style="font-size: ${fontSize}px; opacity: ${opacity}; color: hsl(${hue}, 70%, 50%);"
+               title="${tag.name}: ${tag.count} images">
+                ${tag.name}
+            </a>
+        `;
+    }).join(' ');
+
+    document.getElementById('tagList').innerHTML = `<div class="tag-cloud-container">${html}</div>`;
+}
+
+function toggleTagView() {
+    tagViewMode = tagViewMode === 'list' ? 'cloud' : 'list';
+
+    const icon = document.getElementById('viewToggleIcon');
+    const text = document.getElementById('viewToggleText');
+
+    if (tagViewMode === 'cloud') {
+        icon.textContent = '📋';
+        text.textContent = 'List';
+    } else {
+        icon.textContent = '☁️';
+        text.textContent = 'Cloud';
+    }
+
+    renderTags(displayedTags);
+}
+
+function filterTags() {
+    const search = document.getElementById('tagSearch').value.toLowerCase();
+
+    if (search === '') {
+        displayedTags = allTags.slice(0, tagDisplayLimit);
+    } else {
+        // Search filters but maintains sort order
+        displayedTags = allTags.filter(tag =>
+            tag.name.toLowerCase().includes(search)
+        ).slice(0, tagDisplayLimit);
+    }
+
+    renderTags(displayedTags);
+
+    // Update load more button visibility
+    const hasMore = search === ''
+        ? tagDisplayLimit < allTags.length
+        : displayedTags.length === tagDisplayLimit;
+
+    document.getElementById('loadMoreTags').style.display = hasMore ? 'block' : 'none';
+}
+
+function loadMoreTags() {
+    tagDisplayLimit += 100; // Load 100 more per user preference
+    displayedTags = allTags.slice(0, tagDisplayLimit);
+    renderTags(displayedTags);
+
+    if (tagDisplayLimit >= allTags.length) {
+        document.getElementById('loadMoreTags').style.display = 'none';
+        document.getElementById('loadMoreTags').textContent = 'All tags loaded';
+        document.getElementById('loadMoreTags').disabled = true;
+    }
+}
+
+// Load statistics and tags on page load
+loadStatistics();
+loadAllTags();
+</script>
+{% endblock %}

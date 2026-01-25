@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Civitai Scraper{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2 class="mb-4">
+                <a href="/" class="btn btn-outline-secondary btn-sm me-3">← Back to Gallery</a>
+                Settings
+            </h2>
+
+            <!-- Status Messages -->
+            <div id="statusMessage" class="alert d-none"></div>
+
+            <!-- Path Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Storage Paths</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Download Location</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="downloadPath"
+                                   placeholder="D:\civitai-scraper\downloads">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="browseFolder('download')">Browse</button>
+                        </div>
+                        <small class="text-muted">
+                            Where downloaded images and videos will be saved.
+                            You can use any drive with sufficient space.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">App Data Location</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="appDataPath"
+                                   placeholder="C:\Users\PC\civitai_scraper" disabled>
+                            <button class="btn btn-outline-secondary" type="button" disabled>
+                                Browse
+                            </button>
+                        </div>
+                        <small class="text-muted">
+                            Database, logs, and configuration files location.
+                            <strong>This cannot be changed to prevent data loss.</strong>
+                        </small>
+                    </div>
+
+                    <div class="alert alert-info mb-0">
+                        <strong>Database Location:</strong> <code id="dbPath">Loading...</code><br>
+                        <strong>Download Location:</strong> <code id="downloadPathDisplay">Loading...</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Download Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Concurrent Workers</label>
+                        <input type="number" class="form-control" id="workers"
+                               min="1" max="20" value="5">
+                        <small class="text-muted">
+                            Number of parallel downloads (1-20). Higher = faster but more memory/bandwidth.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Civitai API Key (Optional)</label>
+                        <input type="password" class="form-control" id="apiKey"
+                               placeholder="Enter API key for authenticated requests">
+                        <small class="text-muted">
+                            Optional. Allows access to NSFW content and higher rate limits.
+                            Get yours at <a href="https://civitai.com/user/account" target="_blank">civitai.com/user/account</a>
+                        </small>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="organizeByNsfw" checked>
+                        <label class="form-check-label" for="organizeByNsfw">
+                            Organize files by NSFW level (SFW/Mature/Adult folders)
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="enableRetry" checked>
+                        <label class="form-check-label" for="enableRetry">
+                            Enable automatic retry on failed downloads
+                        </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Max Retry Attempts</label>
+                        <input type="number" class="form-control" id="maxRetries"
+                               min="1" max="10" value="3">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Advanced Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Log Level</label>
+                        <select class="form-select" id="logLevel">
+                            <option value="DEBUG">DEBUG - Verbose logging</option>
+                            <option value="INFO" selected>INFO - Normal logging</option>
+                            <option value="WARNING">WARNING - Only warnings and errors</option>
+                            <option value="ERROR">ERROR - Only errors</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Path Validation -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Path Validation</h5>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-info mb-3" onclick="validatePaths()">
+                        <span id="validateSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                        Validate Paths
+                    </button>
+                    <div id="validationResults"></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2 mb-4">
+                <button class="btn btn-primary" onclick="saveSettings()">
+                    <span id="saveSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                    Save Settings
+                </button>
+                <button class="btn btn-secondary" onclick="loadSettings()">Reload</button>
+                <button class="btn btn-danger" onclick="resetSettings()">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load settings on page load
+document.addEventListener('DOMContentLoaded', loadSettings);
+
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/settings');
+        const data = await response.json();
+
+        if (data.success) {
+            const s = data.settings;
+            document.getElementById('downloadPath').value = s.download_path || '';
+            document.getElementById('appDataPath').value = s.app_data_path || '';
+            document.getElementById('workers').value = s.workers || 5;
+            document.getElementById('apiKey').value = s.api_key || '';
+            document.getElementById('organizeByNsfw').checked = s.organize_by_nsfw !== false;
+            document.getElementById('enableRetry').checked = s.enable_retry !== false;
+            document.getElementById('maxRetries').value = s.max_retries || 3;
+            document.getElementById('logLevel').value = s.log_level || 'INFO';
+
+            // Update display paths
+            document.getElementById('dbPath').textContent = data.database_path || 'N/A';
+            document.getElementById('downloadPathDisplay').textContent = data.download_path_resolved || 'N/A';
+        }
+    } catch (error) {
+        showMessage('Error loading settings: ' + error.message, 'danger');
+    }
+}
+
+async function saveSettings() {
+    const btn = document.querySelector('button[onclick="saveSettings()"]');
+    const spinner = document.getElementById('saveSpinner');
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+
+    const settings = {
+        download_path: document.getElementById('downloadPath').value,
+        workers: parseInt(document.getElementById('workers').value),
+        api_key: document.getElementById('apiKey').value,
+        organize_by_nsfw: document.getElementById('organizeByNsfw').checked,
+        enable_retry: document.getElementById('enableRetry').checked,
+        max_retries: parseInt(document.getElementById('maxRetries').value),
+        log_level: document.getElementById('logLevel').value
+    };
+
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(settings)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage('Settings saved successfully! Restart may be required for some changes.', 'success');
+            loadSettings();
+        } else {
+            showMessage('Error saving settings: ' + (data.error || 'Unknown error'), 'danger');
+        }
+    } catch (error) {
+        showMessage('Error: ' + error.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+}
+
+async function validatePaths() {
+    const btn = document.querySelector('button[onclick="validatePaths()"]');
+    const spinner = document.getElementById('validateSpinner');
+    const results = document.getElementById('validationResults');
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+    results.innerHTML = '<div class="text-muted">Validating...</div>';
+
+    try {
+        const response = await fetch('/api/settings/validate');
+        const data = await response.json();
+
+        let html = '';
+
+        if (data.valid) {
+            html = '<div class="alert alert-success mb-0">✓ All paths are valid and writable</div>';
+        } else {
+            html = '<div class="alert alert-danger mb-3"><strong>Validation Errors:</strong><ul class="mb-0">';
+            data.errors.forEach(err => {
+                html += `<li>${err}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        if (data.warnings && data.warnings.length > 0) {
+            html += '<div class="alert alert-warning mb-0"><strong>Warnings:</strong><ul class="mb-0">';
+            data.warnings.forEach(warn => {
+                html += `<li>${warn}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        results.innerHTML = html;
+    } catch (error) {
+        results.innerHTML = `<div class="alert alert-danger mb-0">Error: ${error.message}</div>`;
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+}
+
+function resetSettings() {
+    if (!confirm('Reset all settings to defaults? This cannot be undone.')) {
+        return;
+    }
+
+    fetch('/api/settings/reset', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('Settings reset to defaults', 'success');
+                loadSettings();
+            } else {
+                showMessage('Error resetting settings: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showMessage('Error: ' + error.message, 'danger');
+        });
+}
+
+function browseFolder(type) {
+    alert('Folder browsing requires desktop integration. Please type the path manually.\n\nExample paths:\nWindows: D:\\civitai-scraper\\downloads\nLinux/Mac: /home/user/civitai-scraper/downloads');
+}
+
+function showMessage(message, type) {
+    const msgDiv = document.getElementById('statusMessage');
+    msgDiv.className = `alert alert-${type}`;
+    msgDiv.textContent = message;
+    msgDiv.classList.remove('d-none');
+
+    setTimeout(() => {
+        msgDiv.classList.add('d-none');
+    }, 5000);
+}
+</script>
+{% endblock %}

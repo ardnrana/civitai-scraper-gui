@@ -1,0 +1,24 @@
+output:
+  directory: downloads
+  save_metadata: true
+download:
+  workers: 5
+  delay: 0.5
+  allowed_file_types: null
+filters:
+  sort: Most Reactions
+  period: AllTime
+  nsfw: null
+  nsfw_only: false
+  min_resolution: null
+  username: null
+  model_id: null
+logging:
+  level: INFO
+  file: null
+api:
+  key: null
+  base_url: https://civitai.com/api/v1/images
+retry:
+  enabled: true
+  max_retries: 3

@@ -1,0 +1,1620 @@
+{% extends "base.html" %}
+
+{% block title %}Gallery{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Image Gallery</h2>
+
+        <!-- Quick Filter Presets -->
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted" style="font-size: 0.9em;">Quick Filters:</span>
+                    <button class="btn btn-sm btn-outline-primary" onclick="applyPreset('popular')">
+                        🔥 Popular
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="applyPreset('high-res')">
+                        📐 High-Res
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="applyPreset('recent')">
+                        ⏰ Recent
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="applyPreset('favorites')">
+                        ♥ Favorites
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="applyPreset('reset')">
+                        ↺ Reset All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and View Options -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Gallery Options</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary active" id="gridView">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/>
+                                </svg>
+                                Grid
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="listView">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+                                </svg>
+                                List
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-2">
+                        <label>NSFW Level</label>
+                        <select id="nsfwFilter" class="form-select">
+                            <option value="">All</option>
+                            <option value="0">None (0)</option>
+                            <option value="1">Soft (1)</option>
+                            <option value="2">Mature (2-4)</option>
+                            <option value="5">X/XXX (5-6)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label>Show</label>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="favoritesOnly">
+                            <label class="form-check-label" for="favoritesOnly">
+                                ♥ Favorites Only
+                            </label>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm w-100 mt-2" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#favoritesPanel">
+                            <span id="favoritesToggle">▶</span> Manage
+                        </button>
+                        <div class="collapse mt-2" id="favoritesPanel">
+                            <button class="btn btn-sm btn-success w-100 mb-1" onclick="organizeFavorites()">
+                                📁 Organize Favorites
+                            </button>
+                            <button class="btn btn-sm btn-warning w-100" onclick="cleanFavorites()">
+                                🧹 Clean Favorites
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label>File Types</label>
+                        <button class="btn btn-outline-secondary w-100 btn-sm" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#fileTypePanel">
+                            <span id="fileTypeToggle">▶</span> Types (<span id="selectedTypesCount">All</span>)
+                        </button>
+                        <div class="collapse mt-2" id="fileTypePanel">
+                            <div class="form-check">
+                                <input class="form-check-input file-type-checkbox" type="checkbox" value="png" id="type-png" checked>
+                                <label class="form-check-label" for="type-png">PNG</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input file-type-checkbox" type="checkbox" value="jpg" id="type-jpg" checked>
+                                <label class="form-check-label" for="type-jpg">JPG/JPEG</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input file-type-checkbox" type="checkbox" value="webp" id="type-webp" checked>
+                                <label class="form-check-label" for="type-webp">WebP</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input file-type-checkbox" type="checkbox" value="gif" id="type-gif">
+                                <label class="form-check-label" for="type-gif">GIF</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input file-type-checkbox" type="checkbox" value="mp4" id="type-mp4">
+                                <label class="form-check-label" for="type-mp4">MP4 (Video)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input file-type-checkbox" type="checkbox" value="webm" id="type-webm">
+                                <label class="form-check-label" for="type-webm">WebM (Video)</label>
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary" onclick="selectAllTypes()">All</button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearAllTypes()">None</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label>Per page</label>
+                        <select id="perPageFilter" class="form-select">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label>Size</label>
+                        <select id="thumbSize" class="form-select">
+                            <option value="col-lg-2 col-md-3 col-sm-4 col-6">Small</option>
+                            <option value="col-lg-3 col-md-4 col-sm-6 col-6">Medium</option>
+                            <option value="col-lg-4 col-md-6 col-12" selected>Large</option>
+                            <option value="col-lg-6 col-md-12 col-12">X-Large</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label>Sort By</label>
+                        <select id="sortBy" class="form-select">
+                            <option value="newest">Newest</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="largest">Largest</option>
+                            <option value="resolution">Hi-Res</option>
+                            <option value="reactions">Most Reactions 🔥</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label>&nbsp;</label>
+                        <button id="applyFilters" class="btn btn-primary w-100">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Model Filter Panel -->
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#modelFilterPanel">
+                        <span id="modelFilterToggle">▶</span> Filter by Model (<span id="selectedModelsCount">0</span> selected)
+                    </button>
+                    <div class="collapse mt-2" id="modelFilterPanel">
+                        <div class="card card-body" style="max-height: 300px; overflow-y: auto;">
+                            <div class="mb-2">
+                                <button class="btn btn-sm btn-outline-secondary me-2" onclick="selectAllModels()">Select All</button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearAllModels()">Clear All</button>
+                            </div>
+                            <div id="modelCheckboxes">
+                                <div class="text-muted">Loading models...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tag Filter Panel -->
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm w-100" type="button" data-bs-toggle="collapse" data-bs-target="#tagFilterPanel">
+                        <span id="tagFilterToggle">▶</span> Filter by Tags (<span id="selectedTagsCount">0</span> selected)
+                    </button>
+                    <div class="collapse mt-2" id="tagFilterPanel">
+                        <div class="card card-body" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Search box -->
+                            <input type="text"
+                                   class="form-control form-control-sm mb-2"
+                                   id="tagFilterSearch"
+                                   placeholder="Search tags..."
+                                   onkeyup="searchTagFilter()">
+
+                            <!-- Quick actions -->
+                            <div class="mb-2">
+                                <button class="btn btn-sm btn-outline-primary" onclick="selectPopularTags()">Popular</button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearAllTags()">Clear</button>
+                            </div>
+
+                            <!-- Tag checkboxes -->
+                            <div id="tagCheckboxes">
+                                <div class="text-muted">Loading tags...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tag Fetching Status -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h6 class="card-title">Tag & Metadata Fetching Status</h6>
+                <p class="mb-2">
+                    <span id="taggedCount">0</span> / <span id="totalImages">0</span> images have tags
+                    (<span id="tagCompletion">0</span>%)
+                </p>
+                <p class="mb-2 text-muted">
+                    <span id="pendingCount">0</span> pending |
+                    <span id="totalTags">0</span> unique tags
+                </p>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-4">
+                        <select class="form-select form-select-sm" id="tagBatchSize">
+                            <option value="100">100 images</option>
+                            <option value="500">500 images</option>
+                            <option value="1000">1,000 images</option>
+                            <option value="5000">5,000 images</option>
+                            <option value="0">All remaining</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="btn-group w-100">
+                            <button class="btn btn-primary btn-sm" onclick="fetchTags()" id="fetchTagsBtn">
+                                <span id="fetchSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                                Fetch Tags
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="fetchMetadata()" id="fetchMetadataBtn">
+                                <span id="metadataSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                                Fetch Metadata
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="updateTagStatus()">
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress mt-2 d-none" id="tagProgress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         style="width: 0%" id="tagProgressBar">
+                        <span id="tagProgressText"></span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>Note:</strong> Metadata fetching only works for images that originally had generation data.
+                        Images uploaded without metadata cannot retrieve it later.
+                        Use "Fetch Tags" for user-contributed tags (works for all images).
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Grid -->
+        <div id="imageGrid" class="row">
+            <!-- Images will be loaded here -->
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center" id="pagination">
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Image Detail Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Image Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="copyPrompt()">Copy Prompt</button>
+                <button type="button" class="btn btn-secondary" onclick="copyMetadata()">Copy All Metadata</button>
+                <button type="button" class="btn btn-primary" onclick="editMetadata()">Edit Metadata</button>
+                <button type="button" class="btn btn-danger" onclick="deleteImage()">Delete Image</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Viewer -->
+<div id="fullscreenViewer" class="fullscreen-viewer" style="display: none;">
+    <!-- Controls -->
+    <div class="fullscreen-controls">
+        <button class="control-btn" onclick="closeFullscreen()" title="Close (ESC)">✕</button>
+        <button class="control-btn" id="favoriteBtn" onclick="toggleFavorite()" title="Favorite (F)">
+            <span id="favoriteIcon">♡</span>
+        </button>
+        <button class="control-btn" onclick="toggleFullscreenMetadata()" title="Toggle Info (I)">ℹ️</button>
+        <button class="control-btn" onclick="downloadCurrentImage()" title="Download">⬇</button>
+        <button class="control-btn" onclick="deleteCurrentImage()" title="Delete (Del)">🗑</button>
+    </div>
+
+    <!-- Metadata Sidebar -->
+    <div id="fullscreenMetadata" class="fullscreen-metadata" style="display: none;">
+        <div class="metadata-content" id="fullscreenMetadataContent">
+            <div class="spinner-border spinner-border-sm"></div> Loading...
+        </div>
+    </div>
+
+    <!-- Left Nav -->
+    <div class="fullscreen-nav fullscreen-nav-left" onclick="navigateFullscreen(-1)" title="Previous (←)">‹</div>
+
+    <!-- Image -->
+    <div class="fullscreen-content">
+        <img id="fullscreenImage" src="" alt="">
+        <div class="fullscreen-info">
+            <span id="fullscreenPosition" class="info-item">1 / 50</span>
+            <span id="fullscreenFilename" class="info-item">image.jpg</span>
+            <span id="fullscreenResolution" class="info-item">1024x1024</span>
+            <span id="fullscreenNsfw" class="info-item badge bg-secondary">SFW</span>
+        </div>
+    </div>
+
+    <!-- Right Nav -->
+    <div class="fullscreen-nav fullscreen-nav-right" onclick="navigateFullscreen(1)" title="Next (→)">›</div>
+
+    <!-- Spinner -->
+    <div id="fullscreenSpinner" class="fullscreen-spinner d-none">
+        <div class="spinner-border text-light"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+let perPage = 50;
+let nsfwFilter = '';
+let selectedFileTypes = ['png', 'jpg', 'webp']; // Default selected types
+let selectedModels = [];
+let sortBy = 'newest';
+let viewMode = 'grid';
+let thumbSize = 'col-lg-4 col-md-6 col-12';
+let currentImageId = null;
+let currentImageData = null;
+let fullscreenMode = false;
+let fullscreenImages = [];
+let fullscreenIndex = 0;
+let fullscreenPageCache = new Map(); // Cache pages for fullscreen navigation
+let fullscreenTotalImages = 0;
+let fullscreenCurrentPage = 1;
+let fullscreenFilters = {}; // Store current filters for fullscreen
+let currentImageFavorited = false;
+
+// Helper function to format numbers
+function formatNumber(num) {
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num;
+}
+
+// Quick Filter Presets
+function applyPreset(preset) {
+    switch(preset) {
+        case 'popular':
+            // Most reactions, images only
+            document.getElementById('sortBy').value = 'reactions';
+            clearAllTypes();
+            ['png', 'jpg', 'webp'].forEach(type => {
+                const checkbox = document.getElementById(`type-${type}`);
+                if (checkbox) checkbox.checked = true;
+            });
+            updateFileTypeFilter();
+            document.getElementById('favoritesOnly').checked = false;
+            break;
+
+        case 'high-res':
+            // High resolution sort
+            document.getElementById('sortBy').value = 'resolution';
+            document.getElementById('favoritesOnly').checked = false;
+            break;
+
+        case 'recent':
+            // Newest first
+            document.getElementById('sortBy').value = 'newest';
+            document.getElementById('favoritesOnly').checked = false;
+            break;
+
+        case 'favorites':
+            // Show only favorites
+            document.getElementById('favoritesOnly').checked = true;
+            document.getElementById('sortBy').value = 'newest';
+            break;
+
+        case 'reset':
+            // Reset all filters to defaults
+            document.getElementById('nsfwFilter').value = '';
+            document.getElementById('sortBy').value = 'newest';
+            selectAllTypes();
+            clearAllModels();
+            clearAllTags();
+            document.getElementById('favoritesOnly').checked = false;
+            break;
+    }
+
+    currentPage = 1;
+    loadImages(1);
+}
+
+function loadImages(page = 1) {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('imageGrid').innerHTML = '';
+
+    const params = new URLSearchParams({
+        page: page,
+        per_page: perPage,
+        sort: sortBy
+    });
+
+    if (nsfwFilter) {
+        params.append('nsfw_level', nsfwFilter);
+    }
+
+    if (selectedFileTypes && selectedFileTypes.length > 0 && selectedFileTypes.length < 6) {
+        selectedFileTypes.forEach(type => params.append('file_types', type));
+    }
+
+    if (selectedModels.length > 0) {
+        selectedModels.forEach(model => params.append('models', model));
+    }
+
+    if (selectedTags && selectedTags.length > 0) {
+        selectedTags.forEach(tag => params.append('tags', tag));
+    }
+
+    if (document.getElementById('favoritesOnly').checked) {
+        params.append('favorites_only', 'true');
+    }
+
+    fetch(`/api/images?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+
+            const grid = document.getElementById('imageGrid');
+
+            if (viewMode === 'grid') {
+                data.images.forEach(img => {
+                    const col = document.createElement('div');
+                    col.className = `${thumbSize} image-card`;
+                    col.innerHTML = `
+                        <div class="card h-100" style="cursor: pointer; position: relative;">
+                            ${img.favorited ? '<span class="favorite-badge">♥</span>' : ''}
+                            ${img.reaction_total > 0 ? `<span class="reaction-badge" title="Total reactions">🔥 ${formatNumber(img.reaction_total)}</span>` : ''}
+                            <img src="/api/thumbnail/${img.id}" class="card-img-top thumbnail"
+                                 alt="${img.filename}" onclick="initFullscreenMode('${img.id}')"
+                                 loading="lazy"
+                                 style="height: 200px; object-fit: cover;">
+                            <div class="card-body p-2">
+                                <p class="card-text small mb-1"><strong>${img.width}x${img.height}</strong></p>
+                                <p class="card-text text-muted" style="font-size: 0.75rem;">${img.filename.substring(0, 25)}${img.filename.length > 25 ? '...' : ''}</p>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(col);
+                });
+            } else {
+                // List view
+                data.images.forEach(img => {
+                    const col = document.createElement('div');
+                    col.className = 'col-12 image-card';
+                    col.innerHTML = `
+                        <div class="card mb-2">
+                            <div class="row g-0">
+                                <div class="col-md-2">
+                                    <img src="/api/thumbnail/${img.id}" class="img-fluid thumbnail"
+                                         alt="${img.filename}" onclick="showDetails('${img.id}')"
+                                         loading="lazy"
+                                         style="height: 150px; width: 100%; object-fit: cover; cursor: pointer;">
+                                </div>
+                                <div class="col-md-10">
+                                    <div class="card-body">
+                                        <h6 class="card-title">${img.filename}</h6>
+                                        <p class="card-text">
+                                            <span class="badge bg-primary">${img.width}x${img.height}</span>
+                                            <span class="badge bg-secondary">NSFW: ${img.nsfw_level || 'N/A'}</span>
+                                            ${img.folder_path ? `<span class="badge bg-info">${img.folder_path}</span>` : ''}
+                                        </p>
+                                        <p class="card-text"><small class="text-muted">Downloaded: ${new Date(img.timestamp).toLocaleString()}</small></p>
+                                        <button class="btn btn-sm btn-primary" onclick="showDetails('${img.id}')">View Details</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(col);
+                });
+            }
+
+            // Store images for fullscreen mode
+            fullscreenImages = data.images;
+
+            // Update pagination
+            updatePagination(data.page, data.total_pages);
+        })
+        .catch(error => {
+            console.error('Error loading images:', error);
+            document.getElementById('loading').style.display = 'none';
+        });
+}
+
+function updatePagination(currentPage, totalPages) {
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = '';
+
+    // Previous button
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadImages(${currentPage - 1}); return false;">Previous</a>`;
+    pagination.appendChild(prevLi);
+
+    // Page numbers (show max 5)
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    for (let i = startPage; i <= endPage; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="loadImages(${i}); return false;">${i}</a>`;
+        pagination.appendChild(li);
+    }
+
+    // Next button
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="loadImages(${currentPage + 1}); return false;">Next</a>`;
+    pagination.appendChild(nextLi);
+}
+
+function showDetails(imageId) {
+    currentImageId = imageId;
+    fetch(`/api/image/${imageId}`)
+        .then(response => response.json())
+        .then(data => {
+            currentImageData = data;
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Image Info</h6>
+                        <p><strong>Filename:</strong> ${data.image.filename}</p>
+                        <p><strong>Resolution:</strong> ${data.image.width}x${data.image.height}</p>
+                        <p><strong>NSFW Level:</strong> ${data.image.nsfw_level || 'N/A'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        ${data.params ? `
+                            <h6>Generation Parameters</h6>
+                            <p><strong>Model:</strong> ${data.params.model || 'N/A'}</p>
+                            <p><strong>Sampler:</strong> ${data.params.sampler || 'N/A'}</p>
+                            <p><strong>Steps:</strong> ${data.params.steps || 'N/A'}</p>
+                            <p><strong>CFG Scale:</strong> ${data.params.cfg_scale || 'N/A'}</p>
+                        ` : '<p>No generation parameters available</p>'}
+                    </div>
+                </div>
+                ${data.params && data.params.prompt ? `
+                    <div class="mt-3">
+                        <h6>Prompt</h6>
+                        <p class="small">${data.params.prompt}</p>
+                    </div>
+                ` : ''}
+                ${data.tags && data.tags.length > 0 ? `
+                    <div class="mt-3">
+                        <h6>Tags</h6>
+                        <p>${data.tags.map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('')}</p>
+                    </div>
+                ` : ''}
+            `;
+
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            modal.show();
+        })
+        .catch(error => console.error('Error loading details:', error));
+}
+
+document.getElementById('applyFilters').addEventListener('click', function() {
+    nsfwFilter = document.getElementById('nsfwFilter').value;
+    updateFileTypeFilter();
+    perPage = parseInt(document.getElementById('perPageFilter').value);
+    thumbSize = document.getElementById('thumbSize').value;
+    sortBy = document.getElementById('sortBy').value;
+    currentPage = 1;
+    loadImages(1);
+});
+
+// View mode switches
+document.getElementById('gridView').addEventListener('click', function() {
+    viewMode = 'grid';
+    document.getElementById('gridView').classList.add('active');
+    document.getElementById('listView').classList.remove('active');
+    document.getElementById('thumbSize').disabled = false;
+    loadImages(currentPage);
+});
+
+document.getElementById('listView').addEventListener('click', function() {
+    viewMode = 'list';
+    document.getElementById('listView').classList.add('active');
+    document.getElementById('gridView').classList.remove('active');
+    document.getElementById('thumbSize').disabled = true;
+    loadImages(currentPage);
+});
+
+// Keyboard shortcuts
+// Mode-aware keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (fullscreenMode) {
+        switch(e.key) {
+            case 'Escape':
+                closeFullscreen();
+                break;
+            case 'ArrowLeft':
+                navigateFullscreen(-1);
+                break;
+            case 'ArrowRight':
+                navigateFullscreen(1);
+                break;
+            case 'f':
+            case 'F':
+                toggleFavorite();
+                break;
+            case 'i':
+            case 'I':
+                toggleFullscreenMetadata();
+                break;
+            case 'Delete':
+                deleteCurrentImage();
+                break;
+        }
+    } else {
+        switch(e.key) {
+            case 'ArrowLeft':
+                if (currentPage > 1) loadImages(currentPage - 1);
+                break;
+            case 'ArrowRight':
+                loadImages(currentPage + 1);
+                break;
+            case 'g':
+            case 'G':
+                document.getElementById('gridView').click();
+                break;
+            case 'l':
+            case 'L':
+                document.getElementById('listView').click();
+                break;
+        }
+    }
+});
+
+// Delete image function
+function deleteImage() {
+    if (!currentImageId) {
+        alert('No image selected');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this image and its metadata? This cannot be undone!')) {
+        return;
+    }
+
+    fetch(`/api/image/${currentImageId}/delete`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Image deleted successfully');
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('imageModal'));
+            modal.hide();
+            // Reload gallery
+            loadImages(currentPage);
+        } else {
+            alert('Error deleting image: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error deleting image: ' + error);
+        console.error('Delete error:', error);
+    });
+}
+
+// Copy prompt only to clipboard
+function copyPrompt() {
+    if (!currentImageData || !currentImageData.params) {
+        alert('No prompt available');
+        return;
+    }
+
+    const prompt = currentImageData.params.prompt || '';
+    if (!prompt) {
+        alert('No prompt found');
+        return;
+    }
+
+    navigator.clipboard.writeText(prompt)
+        .then(() => {
+            alert('Prompt copied to clipboard!');
+        })
+        .catch(err => {
+            alert('Failed to copy prompt: ' + err);
+        });
+}
+
+// Copy metadata to clipboard
+function copyMetadata() {
+    if (!currentImageData) {
+        alert('No metadata available');
+        return;
+    }
+
+    const metadata = {
+        image: currentImageData.image,
+        params: currentImageData.params,
+        tags: currentImageData.tags
+    };
+
+    const metadataText = JSON.stringify(metadata, null, 2);
+
+    navigator.clipboard.writeText(metadataText)
+        .then(() => {
+            alert('Metadata copied to clipboard!');
+        })
+        .catch(err => {
+            alert('Failed to copy metadata: ' + err);
+        });
+}
+
+// Edit metadata function
+function editMetadata() {
+    if (!currentImageData || !currentImageData.params) {
+        alert('No metadata available to edit');
+        return;
+    }
+
+    const params = currentImageData.params;
+    const promptText = params.prompt || '';
+    const negativePromptText = params.negative_prompt || '';
+
+    // Create editable modal content
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label"><strong>Prompt</strong></label>
+            <textarea class="form-control" id="editPrompt" rows="4">${promptText}</textarea>
+            <button class="btn btn-sm btn-outline-secondary mt-1" onclick="navigator.clipboard.writeText(document.getElementById('editPrompt').value)">Copy Prompt</button>
+        </div>
+        <div class="mb-3">
+            <label class="form-label"><strong>Negative Prompt</strong></label>
+            <textarea class="form-control" id="editNegativePrompt" rows="3">${negativePromptText}</textarea>
+            <button class="btn btn-sm btn-outline-secondary mt-1" onclick="navigator.clipboard.writeText(document.getElementById('editNegativePrompt').value)">Copy Negative Prompt</button>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label"><strong>Model</strong></label>
+                <input type="text" class="form-control mb-2" id="editModel" value="${params.model || ''}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label"><strong>Sampler</strong></label>
+                <input type="text" class="form-control mb-2" id="editSampler" value="${params.sampler || ''}">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label"><strong>Steps</strong></label>
+                <input type="number" class="form-control mb-2" id="editSteps" value="${params.steps || ''}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label"><strong>CFG Scale</strong></label>
+                <input type="number" step="0.1" class="form-control mb-2" id="editCfgScale" value="${params.cfg_scale || ''}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label"><strong>Seed</strong></label>
+                <input type="number" class="form-control mb-2" id="editSeed" value="${params.seed || ''}">
+            </div>
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-primary" onclick="saveMetadata()">Save Changes</button>
+            <button class="btn btn-secondary" onclick="showDetails('${currentImageId}')">Cancel</button>
+        </div>
+    `;
+}
+
+// Save edited metadata
+function saveMetadata() {
+    const updatedParams = {
+        prompt: document.getElementById('editPrompt').value,
+        negative_prompt: document.getElementById('editNegativePrompt').value,
+        model: document.getElementById('editModel').value,
+        sampler: document.getElementById('editSampler').value,
+        steps: parseInt(document.getElementById('editSteps').value) || null,
+        cfg_scale: parseFloat(document.getElementById('editCfgScale').value) || null,
+        seed: parseInt(document.getElementById('editSeed').value) || null
+    };
+
+    fetch(`/api/image/${currentImageId}/metadata`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedParams)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Metadata updated successfully!');
+            // Reload details
+            showDetails(currentImageId);
+        } else {
+            alert('Error updating metadata: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error updating metadata: ' + error);
+        console.error('Save error:', error);
+    });
+}
+
+// Tag Fetching Functions
+
+async function updateTagStatus() {
+    try {
+        const response = await fetch('/api/tags/status');
+        const data = await response.json();
+
+        document.getElementById('taggedCount').textContent = data.tagged_images;
+        document.getElementById('totalImages').textContent = data.total_images;
+        document.getElementById('tagCompletion').textContent = data.completion_percentage;
+        document.getElementById('pendingCount').textContent = data.pending_images;
+        document.getElementById('totalTags').textContent = data.total_tags;
+    } catch (error) {
+        console.error('Tag status error:', error);
+    }
+}
+
+async function fetchTags() {
+    const btn = document.getElementById('fetchTagsBtn');
+    const spinner = document.getElementById('fetchSpinner');
+    const progress = document.getElementById('tagProgress');
+    const progressBar = document.getElementById('tagProgressBar');
+    const progressText = document.getElementById('tagProgressText');
+
+    let batchSize = parseInt(document.getElementById('tagBatchSize').value);
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+    progress.classList.remove('d-none');
+
+    try {
+        const response = await fetch('/api/tags/fetch', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({max_images: batchSize || 999999, delay: 0.5})
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            const s = data.stats;
+            progressText.textContent = `Complete! ${s.success}/${s.processed} fetched`;
+            setTimeout(() => {
+                alert(`Tag fetching complete!\n\nProcessed: ${s.processed}\nSuccess: ${s.success}\nFailed: ${s.failed}\nTotal tags: ${s.total_tags}`);
+            }, 500);
+
+            await updateTagStatus();
+            loadImages(currentPage);
+        } else {
+            alert('Tag fetching failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+        setTimeout(() => progress.classList.add('d-none'), 2000);
+    }
+}
+
+async function fetchMetadata() {
+    const btn = document.getElementById('fetchMetadataBtn');
+    const spinner = document.getElementById('metadataSpinner');
+    const progress = document.getElementById('tagProgress');
+    const progressBar = document.getElementById('tagProgressBar');
+    const progressText = document.getElementById('tagProgressText');
+
+    let batchSize = parseInt(document.getElementById('tagBatchSize').value);
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+    progress.classList.remove('d-none');
+    progressText.textContent = 'Fetching metadata...';
+
+    try {
+        const response = await fetch('/api/metadata/fetch', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({max_images: batchSize || 999999, delay: 0.5})
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            const s = data.stats;
+            progressText.textContent = `Complete! ${s.success}/${s.processed} fetched`;
+            setTimeout(() => {
+                let msg = `Metadata fetching complete!\n\n`;
+                msg += `✓ Successfully fetched: ${s.success}\n`;
+
+                if (s.already_null > 0) {
+                    msg += `⊘ Skipped (no metadata available): ${s.already_null}\n`;
+                }
+                if (s.not_found > 0) {
+                    msg += `✗ Not found (deleted/private): ${s.not_found}\n`;
+                }
+                if (s.failed > 0) {
+                    msg += `✗ Failed: ${s.failed}\n`;
+                }
+
+                msg += `\nTotal images with metadata: ${s.total_with_metadata}`;
+
+                if (s.success === 0 && s.already_null > 0) {
+                    msg += `\n\nNote: These images were uploaded without generation metadata.`;
+                    msg += `\nMetadata cannot be retrieved for images that never had it.`;
+                }
+
+                alert(msg);
+            }, 500);
+
+            await updateTagStatus();
+            loadImages(currentPage);
+        } else {
+            alert('Metadata fetching failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+        setTimeout(() => progress.classList.add('d-none'), 2000);
+    }
+}
+
+// ========== FULLSCREEN GALLERY ==========
+
+// Initialize fullscreen mode with lazy loading
+async function initFullscreenMode(startImageId) {
+    // Store current filters for fullscreen pagination
+    fullscreenFilters = {
+        nsfw_level: nsfwFilter,
+        file_types: selectedFileTypes,
+        models: selectedModels,
+        sort: sortBy
+    };
+
+    // Load current page
+    await loadFullscreenPage(currentPage);
+
+    // Find starting image
+    const index = fullscreenImages.findIndex(img => img.id === startImageId);
+    if (index !== -1) {
+        fullscreenIndex = index;
+        fullscreenCurrentPage = currentPage;
+    }
+
+    // Pre-fetch next page in background
+    if (currentPage < Math.ceil(fullscreenTotalImages / perPage)) {
+        loadFullscreenPage(currentPage + 1, true);
+    }
+
+    openFullscreen(startImageId);
+}
+
+// Load a specific page for fullscreen viewing
+async function loadFullscreenPage(page, background = false) {
+    if (fullscreenPageCache.has(page)) {
+        if (!background) {
+            fullscreenImages = fullscreenPageCache.get(page);
+        }
+        return;
+    }
+
+    const params = new URLSearchParams({
+        page: page,
+        per_page: perPage,
+        sort: fullscreenFilters.sort
+    });
+
+    if (fullscreenFilters.nsfw_level) {
+        params.append('nsfw_level', fullscreenFilters.nsfw_level);
+    }
+
+    if (fullscreenFilters.file_types && fullscreenFilters.file_types.length > 0 && fullscreenFilters.file_types.length < 6) {
+        fullscreenFilters.file_types.forEach(type => params.append('file_types', type));
+    }
+
+    if (fullscreenFilters.models && fullscreenFilters.models.length > 0) {
+        fullscreenFilters.models.forEach(model => params.append('models', model));
+    }
+
+    try {
+        const response = await fetch(`/api/images?${params}`);
+        const data = await response.json();
+
+        fullscreenPageCache.set(page, data.images);
+        fullscreenTotalImages = data.total;
+
+        if (!background) {
+            fullscreenImages = data.images;
+        }
+    } catch (error) {
+        console.error('Fullscreen page load failed:', error);
+    }
+}
+
+function openFullscreen(imageId) {
+    const index = fullscreenImages.findIndex(img => img.id === imageId);
+    if (index === -1) return;
+
+    fullscreenIndex = index;
+    fullscreenMode = true;
+
+    document.getElementById('fullscreenViewer').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    updateFullscreenDisplay();
+}
+
+function closeFullscreen() {
+    fullscreenMode = false;
+    document.getElementById('fullscreenViewer').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+async function navigateFullscreen(delta) {
+    if (!fullscreenMode) return;
+
+    fullscreenIndex += delta;
+
+    // Check if need to load next/prev page
+    if (fullscreenIndex < 0) {
+        // Go to previous page
+        if (fullscreenCurrentPage > 1) {
+            fullscreenCurrentPage--;
+            await loadFullscreenPage(fullscreenCurrentPage);
+            fullscreenIndex = fullscreenImages.length - 1;
+
+            // Pre-fetch previous page
+            if (fullscreenCurrentPage > 1) {
+                loadFullscreenPage(fullscreenCurrentPage - 1, true);
+            }
+        } else {
+            // Wrap to last page
+            const lastPage = Math.ceil(fullscreenTotalImages / perPage);
+            fullscreenCurrentPage = lastPage;
+            await loadFullscreenPage(lastPage);
+            fullscreenIndex = fullscreenImages.length - 1;
+        }
+    } else if (fullscreenIndex >= fullscreenImages.length) {
+        // Go to next page
+        const maxPages = Math.ceil(fullscreenTotalImages / perPage);
+        if (fullscreenCurrentPage < maxPages) {
+            fullscreenCurrentPage++;
+            await loadFullscreenPage(fullscreenCurrentPage);
+            fullscreenIndex = 0;
+
+            // Pre-fetch next page
+            if (fullscreenCurrentPage < maxPages) {
+                loadFullscreenPage(fullscreenCurrentPage + 1, true);
+            }
+        } else {
+            // Wrap to first page
+            fullscreenCurrentPage = 1;
+            await loadFullscreenPage(1);
+            fullscreenIndex = 0;
+        }
+    }
+
+    updateFullscreenDisplay();
+}
+
+async function updateFullscreenDisplay() {
+    const img = fullscreenImages[fullscreenIndex];
+    if (!img) return;
+
+    document.getElementById('fullscreenSpinner').classList.remove('d-none');
+
+    const fullscreenImg = document.getElementById('fullscreenImage');
+
+    // Set up load/error handlers BEFORE setting src
+    fullscreenImg.onload = () => {
+        document.getElementById('fullscreenSpinner').classList.add('d-none');
+        console.log('Image loaded successfully:', img.id);
+    };
+
+    fullscreenImg.onerror = (e) => {
+        document.getElementById('fullscreenSpinner').classList.add('d-none');
+        console.error('Failed to load image:', img.id, e);
+        // Show error in image
+        fullscreenImg.alt = 'Failed to load image';
+    };
+
+    // Set new source
+    const imageUrl = `/api/image/${img.id}`;
+    console.log('Loading fullscreen image:', imageUrl);
+    fullscreenImg.src = imageUrl;
+
+    // Show global position (across all pages)
+    const globalIndex = ((fullscreenCurrentPage - 1) * perPage) + fullscreenIndex + 1;
+    document.getElementById('fullscreenPosition').textContent =
+        `${globalIndex} / ${fullscreenTotalImages}`;
+    document.getElementById('fullscreenFilename').textContent = img.filename;
+    document.getElementById('fullscreenResolution').textContent =
+        `${img.width}x${img.height}`;
+
+    const nsfwBadge = document.getElementById('fullscreenNsfw');
+    if (img.nsfw_level > 1) {
+        nsfwBadge.textContent = 'NSFW';
+        nsfwBadge.className = 'info-item badge bg-danger';
+    } else {
+        nsfwBadge.textContent = 'SFW';
+        nsfwBadge.className = 'info-item badge bg-success';
+    }
+
+    await updateFavoriteButton(img.id);
+
+    currentImageId = img.id;
+
+    // Reload metadata if panel is open
+    if (document.getElementById('fullscreenMetadata').style.display === 'block') {
+        loadFullscreenMetadata();
+    }
+}
+
+async function updateFavoriteButton(imageId) {
+    try {
+        const response = await fetch(`/api/image/${imageId}/favorite/status`);
+        const data = await response.json();
+
+        currentImageFavorited = data.favorited;
+        const btn = document.getElementById('favoriteBtn');
+        const icon = document.getElementById('favoriteIcon');
+
+        if (data.favorited) {
+            icon.textContent = '♥';
+            btn.classList.add('favorited');
+        } else {
+            icon.textContent = '♡';
+            btn.classList.remove('favorited');
+        }
+    } catch (error) {
+        console.error('Favorite status error:', error);
+    }
+}
+
+async function toggleFavorite() {
+    if (!currentImageId) return;
+
+    try {
+        const endpoint = currentImageFavorited ? 'unfavorite' : 'favorite';
+        const response = await fetch(`/api/image/${currentImageId}/${endpoint}`, {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            currentImageFavorited = data.favorited;
+
+            const btn = document.getElementById('favoriteBtn');
+            const icon = document.getElementById('favoriteIcon');
+
+            if (data.favorited) {
+                icon.textContent = '♥';
+                btn.classList.add('favorited');
+            } else {
+                icon.textContent = '♡';
+                btn.classList.remove('favorited');
+            }
+
+            loadImages(currentPage);
+        }
+    } catch (error) {
+        alert('Favorite toggle failed: ' + error.message);
+    }
+}
+
+// Favorites Management Functions
+async function organizeFavorites() {
+    if (!confirm('This will create/update links to all favorited images in a "Favorites" directory. Continue?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/favorites/organize', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({use_symlinks: true})
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            let message = `Favorites Organized!\n\n`;
+            message += `Total favorites: ${data.total}\n`;
+            message += `Organized: ${data.organized}\n`;
+            message += `Skipped: ${data.skipped}\n`;
+            message += `\nLocation: ${data.favorites_dir}`;
+
+            if (data.errors && data.errors.length > 0) {
+                message += `\n\nErrors (first 10):\n${data.errors.join('\n')}`;
+            }
+
+            alert(message);
+        } else {
+            alert('Error organizing favorites: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function cleanFavorites() {
+    if (!confirm('This will remove files from the Favorites directory that are no longer favorited. Continue?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/favorites/clean', {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(`${data.message}\n\nRemoved: ${data.removed} files`);
+        } else {
+            alert('Error cleaning favorites: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+// Collapse icon toggle for favorites panel
+document.addEventListener('DOMContentLoaded', function() {
+    const favPanel = document.getElementById('favoritesPanel');
+    if (favPanel) {
+        favPanel.addEventListener('show.bs.collapse', function() {
+            document.getElementById('favoritesToggle').textContent = '▼';
+        });
+        favPanel.addEventListener('hide.bs.collapse', function() {
+            document.getElementById('favoritesToggle').textContent = '▶';
+        });
+    }
+});
+
+function downloadCurrentImage() {
+    if (!currentImageId) return;
+    window.open(`/api/image/${currentImageId}`, '_blank');
+}
+
+async function deleteCurrentImage() {
+    if (!currentImageId) return;
+
+    try {
+        const response = await fetch(`/api/image/${currentImageId}/delete`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            fullscreenImages.splice(fullscreenIndex, 1);
+
+            if (fullscreenImages.length === 0) {
+                closeFullscreen();
+                loadImages(currentPage);
+            } else {
+                if (fullscreenIndex >= fullscreenImages.length) {
+                    fullscreenIndex = fullscreenImages.length - 1;
+                }
+                updateFullscreenDisplay();
+                loadImages(currentPage);
+            }
+        } else {
+            alert('Delete failed: ' + data.error);
+        }
+    } catch (error) {
+        alert('Delete error: ' + error.message);
+    }
+}
+
+function toggleFullscreenMetadata() {
+    const panel = document.getElementById('fullscreenMetadata');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        loadFullscreenMetadata();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+async function loadFullscreenMetadata() {
+    if (!currentImageId) return;
+
+    const content = document.getElementById('fullscreenMetadataContent');
+    content.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Loading...';
+
+    try {
+        const response = await fetch(`/api/metadata/${currentImageId}`);
+        const data = await response.json();
+
+        let html = '<h6>Image Info</h6>';
+        html += `<p><strong>ID:</strong> ${data.id}</p>`;
+        html += `<p><strong>Size:</strong> ${data.width}x${data.height}</p>`;
+        html += `<p><strong>File Size:</strong> ${(data.file_size / 1024 / 1024).toFixed(2)} MB</p>`;
+        html += `<p><strong>NSFW Level:</strong> ${data.nsfw_level || 'N/A'}</p>`;
+        html += `<p><strong>Downloaded:</strong> ${new Date(data.timestamp).toLocaleString()}</p>`;
+
+        if (data.stats) {
+            html += '<h6>Stats</h6>';
+            html += `<p><strong>Likes:</strong> ${data.stats.likeCount || 0} | <strong>Hearts:</strong> ${data.stats.heartCount || 0}</p>`;
+            html += `<p><strong>Comments:</strong> ${data.stats.commentCount || 0}</p>`;
+        }
+
+        if (data.generation_params && (data.generation_params.prompt || data.generation_params.model_name)) {
+            html += '<h6>Generation Info</h6>';
+            if (data.generation_params.model_name) {
+                html += `<p><strong>Model:</strong> ${data.generation_params.model_name}</p>`;
+            }
+            if (data.generation_params.sampler_name) {
+                html += `<p><strong>Sampler:</strong> ${data.generation_params.sampler_name}</p>`;
+            }
+            if (data.generation_params.steps) {
+                html += `<p><strong>Steps:</strong> ${data.generation_params.steps}</p>`;
+            }
+            if (data.generation_params.cfg_scale) {
+                html += `<p><strong>CFG Scale:</strong> ${data.generation_params.cfg_scale}</p>`;
+            }
+            if (data.generation_params.seed) {
+                html += `<p><strong>Seed:</strong> ${data.generation_params.seed}</p>`;
+            }
+            if (data.generation_params.prompt) {
+                html += `<h6>Prompt</h6><p>${data.generation_params.prompt}</p>`;
+            }
+            if (data.generation_params.negative_prompt) {
+                html += `<h6>Negative Prompt</h6><p>${data.generation_params.negative_prompt}</p>`;
+            }
+        }
+
+        if (data.tags && data.tags.length > 0) {
+            html += '<h6>Tags</h6><p>';
+            data.tags.forEach(tag => {
+                html += `<span class="badge bg-secondary">${tag}</span> `;
+            });
+            html += '</p>';
+        }
+
+        content.innerHTML = html;
+    } catch (error) {
+        content.innerHTML = `<p class="text-danger">Error loading metadata: ${error.message}</p>`;
+        console.error('Metadata load error:', error);
+    }
+}
+
+// Model Filter Functions
+
+async function loadModelList() {
+    try {
+        const response = await fetch('/api/models/list');
+        const data = await response.json();
+
+        const container = document.getElementById('modelCheckboxes');
+        if (data.models.length === 0) {
+            container.innerHTML = '<div class="text-muted">No models found. Try fetching metadata first.</div>';
+            return;
+        }
+
+        let html = '';
+        data.models.forEach(model => {
+            html += `
+                <div class="form-check">
+                    <input class="form-check-input model-checkbox" type="checkbox" value="${model.name}" id="model_${model.name.replace(/[^a-zA-Z0-9]/g, '_')}" onchange="updateModelFilter()">
+                    <label class="form-check-label" for="model_${model.name.replace(/[^a-zA-Z0-9]/g, '_')}">
+                        ${model.name} <span class="badge bg-secondary">${model.count}</span>
+                    </label>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading models:', error);
+        document.getElementById('modelCheckboxes').innerHTML = '<div class="text-danger">Error loading models</div>';
+    }
+}
+
+function updateModelFilter() {
+    selectedModels = Array.from(document.querySelectorAll('.model-checkbox:checked')).map(cb => cb.value);
+    document.getElementById('selectedModelsCount').textContent = selectedModels.length;
+}
+
+function selectAllModels() {
+    document.querySelectorAll('.model-checkbox').forEach(cb => cb.checked = true);
+    updateModelFilter();
+}
+
+function clearAllModels() {
+    document.querySelectorAll('.model-checkbox').forEach(cb => cb.checked = false);
+    updateModelFilter();
+}
+
+// Toggle arrow icon when collapsing
+document.getElementById('modelFilterPanel').addEventListener('show.bs.collapse', function() {
+    document.getElementById('modelFilterToggle').textContent = '▼';
+});
+document.getElementById('modelFilterPanel').addEventListener('hide.bs.collapse', function() {
+    document.getElementById('modelFilterToggle').textContent = '▶';
+});
+
+// Tag filter management
+let selectedTags = [];
+let allAvailableTags = [];
+
+async function loadTagList() {
+    try {
+        const response = await fetch('/api/tags/gallery');
+        const data = await response.json();
+
+        allAvailableTags = data.tags;
+        renderTagCheckboxes(allAvailableTags);
+    } catch (error) {
+        console.error('Tag list load failed:', error);
+        document.getElementById('tagCheckboxes').innerHTML = '<div class="text-danger">Error loading tags</div>';
+    }
+}
+
+function renderTagCheckboxes(tags) {
+    const html = tags.map(tag => `
+        <div class="form-check">
+            <input class="form-check-input tag-checkbox"
+                   type="checkbox"
+                   value="${tag.name}"
+                   id="tag-${tag.name.replace(/\s+/g, '-')}"
+                   onchange="updateTagFilter()">
+            <label class="form-check-label" for="tag-${tag.name.replace(/\s+/g, '-')}">
+                ${tag.name} <span class="badge bg-secondary">${tag.count}</span>
+            </label>
+        </div>
+    `).join('');
+
+    document.getElementById('tagCheckboxes').innerHTML = html;
+}
+
+function searchTagFilter() {
+    const search = document.getElementById('tagFilterSearch').value.toLowerCase();
+
+    const filtered = search === ''
+        ? allAvailableTags
+        : allAvailableTags.filter(tag => tag.name.toLowerCase().includes(search));
+
+    renderTagCheckboxes(filtered);
+
+    // Restore selections
+    selectedTags.forEach(tagName => {
+        const checkbox = document.querySelector(`.tag-checkbox[value="${tagName}"]`);
+        if (checkbox) checkbox.checked = true;
+    });
+}
+
+function updateTagFilter() {
+    selectedTags = Array.from(document.querySelectorAll('.tag-checkbox:checked'))
+        .map(cb => cb.value);
+
+    document.getElementById('selectedTagsCount').textContent = selectedTags.length;
+
+    // Auto-refresh gallery when tags change
+    currentPage = 1;
+    loadImages(1);
+}
+
+function selectPopularTags() {
+    // Select top 10 most popular tags
+    clearAllTags();
+    allAvailableTags.slice(0, 10).forEach(tag => {
+        const checkbox = document.querySelector(`.tag-checkbox[value="${tag.name}"]`);
+        if (checkbox) checkbox.checked = true;
+    });
+    updateTagFilter();
+}
+
+function clearAllTags() {
+    document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = false);
+    updateTagFilter();
+}
+
+// Collapse icon toggle for tags
+document.getElementById('tagFilterPanel').addEventListener('show.bs.collapse', function() {
+    document.getElementById('tagFilterToggle').textContent = '▼';
+});
+document.getElementById('tagFilterPanel').addEventListener('hide.bs.collapse', function() {
+    document.getElementById('tagFilterToggle').textContent = '▶';
+});
+
+// File type multi-select management
+function updateFileTypeFilter() {
+    selectedFileTypes = Array.from(document.querySelectorAll('.file-type-checkbox:checked'))
+        .map(cb => cb.value);
+
+    const count = selectedFileTypes.length;
+    const countDisplay = count === 6 ? 'All' : count;
+    document.getElementById('selectedTypesCount').textContent = countDisplay;
+}
+
+function selectAllTypes() {
+    document.querySelectorAll('.file-type-checkbox').forEach(cb => cb.checked = true);
+    updateFileTypeFilter();
+}
+
+function clearAllTypes() {
+    document.querySelectorAll('.file-type-checkbox').forEach(cb => cb.checked = false);
+    updateFileTypeFilter();
+}
+
+// Attach listeners to file type checkboxes
+document.querySelectorAll('.file-type-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateFileTypeFilter);
+});
+
+// Toggle arrow icon for file type panel
+document.getElementById('fileTypePanel').addEventListener('show.bs.collapse', function() {
+    document.getElementById('fileTypeToggle').textContent = '▼';
+});
+document.getElementById('fileTypePanel').addEventListener('hide.bs.collapse', function() {
+    document.getElementById('fileTypeToggle').textContent = '▶';
+});
+
+// Auto-update tag status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateTagStatus();
+    loadModelList();
+    loadTagList();
+});
+
+// Load images on page load
+loadImages(1);
+</script>
+
+<!-- Keyboard Shortcuts Help Modal -->
+<div class="modal fade" id="keyboardHelpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">⌨️ Keyboard Shortcuts</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="text-primary">Gallery Navigation</h6>
+                <table class="table table-sm mb-3">
+                    <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Previous / Next page</td></tr>
+                    <tr><td><kbd>G</kbd></td><td>Switch to Grid view</td></tr>
+                    <tr><td><kbd>L</kbd></td><td>Switch to List view</td></tr>
+                </table>
+
+                <h6 class="text-primary">Fullscreen Viewer</h6>
+                <table class="table table-sm mb-3">
+                    <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Previous / Next image</td></tr>
+                    <tr><td><kbd>F</kbd></td><td>Toggle favorite</td></tr>
+                    <tr><td><kbd>Delete</kbd></td><td>Delete image</td></tr>
+                    <tr><td><kbd>Esc</kbd></td><td>Close fullscreen</td></tr>
+                </table>
+
+                <h6 class="text-primary">General</h6>
+                <table class="table table-sm">
+                    <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Button (Fixed Position) -->
+<button class="btn btn-primary btn-sm"
+        style="position: fixed; bottom: 80px; right: 20px; z-index: 999; border-radius: 50%; width: 50px; height: 50px; font-size: 20px;"
+        data-bs-toggle="modal"
+        data-bs-target="#keyboardHelpModal"
+        title="Keyboard Shortcuts (?)">
+    ?
+</button>
+
+<script>
+// Add keyboard shortcut to open help modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === '?' && !fullscreenMode) {
+        const modal = new bootstrap.Modal(document.getElementById('keyboardHelpModal'));
+        modal.show();
+    }
+});
+</script>
+
+{% endblock %}

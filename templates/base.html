@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Civitai Scraper - {% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Dark Theme Variables */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --card-bg: #ffffff;
+            --input-bg: #ffffff;
+            --navbar-bg: #f8f9fa;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3a3a3a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+            --card-bg: #2d2d2d;
+            --input-bg: #3a3a3a;
+            --navbar-bg: #2d2d2d;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .card-header {
+            background-color: var(--bg-secondary);
+            border-bottom-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .stat-card {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-control, .form-select {
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            border-color: #0d6efd;
+        }
+
+        .navbar {
+            background-color: var(--navbar-bg) !important;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .navbar-brand, .nav-link {
+            color: var(--text-primary) !important;
+        }
+
+        .list-group-item {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .modal-header, .modal-footer {
+            border-color: var(--border-color);
+        }
+
+        .text-muted {
+            color: var(--text-secondary) !important;
+        }
+
+        .border-bottom {
+            border-bottom-color: var(--border-color) !important;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .thumbnail {
+            cursor: pointer;
+            transition: transform 0.2s;
+            object-fit: cover;
+        }
+        .thumbnail:hover {
+            transform: scale(1.05);
+        }
+        .image-card {
+            margin-bottom: 20px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        /* Phase 4: Removed duplicate .stat-card rule - using CSS variables version above */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        /* Fullscreen Viewer */
+        .fullscreen-viewer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.97);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-content img {
+            max-width: 100%;
+            max-height: 85vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        .fullscreen-controls {
+            position: absolute;
+            top: 20px; right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10000;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        .control-btn.favorited {
+            color: #ff4757;
+            background: rgba(255,71,87,0.2);
+        }
+
+        .fullscreen-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .fullscreen-nav:hover {
+            color: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .fullscreen-nav-left { left: 0; }
+        .fullscreen-nav-right { right: 0; }
+
+        .fullscreen-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .fullscreen-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+        }
+
+        .favorite-badge {
+            position: absolute;
+            top: 5px; right: 5px;
+            background: rgba(255,71,87,0.9);
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .reaction-badge {
+            position: absolute;
+            top: 5px; left: 5px;
+            background: rgba(255, 87, 34, 0.9);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* Tag Cloud Styles */
+        .tag-cloud-container {
+            padding: 20px;
+            text-align: center;
+            line-height: 2.5;
+        }
+
+        .tag-cloud-item {
+            display: inline-block;
+            margin: 5px 8px;
+            padding: 4px 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+
+        .tag-cloud-item:hover {
+            opacity: 1 !important;
+            transform: scale(1.1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.05);
+        }
+
+        .fullscreen-metadata {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: rgba(0,0,0,0.95);
+            color: white;
+            overflow-y: auto;
+            z-index: 10001;
+            padding: 60px 20px 20px 20px;
+            font-size: 13px;
+        }
+
+        .metadata-content h6 {
+            color: #4fc3f7;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .metadata-content p {
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .metadata-content strong {
+            color: #90caf9;
+        }
+
+        .metadata-content .badge {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Civitai Scraper</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Gallery</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/control">Control Panel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/statistics">Statistics</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/settings">⚙️ Settings</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Theme Toggle Script -->
+    <script>
+        // Initialize theme from localStorage or default to light
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            }
+        }
+
+        // Initialize theme on page load
+        initTheme();
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

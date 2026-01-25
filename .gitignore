@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Database files
+*.db
+*.db-journal
+
+# Configuration with sensitive data
+config.json
+
+# Downloads directory
+downloads/
+videos/
+metadata/
+
+# Backup directories
+*backup*/
+_backup*/
+backupv*/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+nul
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude
+.claude/
